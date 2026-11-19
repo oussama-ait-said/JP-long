@@ -41,6 +41,51 @@
           ]
         }
       }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:8240657264:android:98c24f613ccbca351795b5",
+        "android_client_info": {
+          "package_name": "com.aistudio.kotoba.krirta"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "8240657264-ijumak3fpfc47rt3ia8dr135o2k5o4ls.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.aistudio.kotoba.krirta",
+            "certificate_hash": "a26fab872cc261b7c1eb742ead31fa0cf16940b0"
+          }
+        },
+        {
+          "client_id": "8240657264-v3365eenff3gs2sgsri2jltuibf29rb3.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.aistudio.kotoba.krirta",
+            "certificate_hash": "329dacb87a3d006cb0694c08ab734a990edfe90f"
+          }
+        },
+        {
+          "client_id": "8240657264-pnnn6n5fvqfo2i621c1gql7bfnb0r18c.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDfmAhG9Mg3j2P4vtEOKzui7c63WFE_W1Q"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "8240657264-pnnn6n5fvqfo2i621c1gql7bfnb0r18c.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
     }
   ],
   "configuration_version": "1"
