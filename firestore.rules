@@ -1,0 +1,170 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidLevel(level) {
+      return level in ['KANA', 'N5', 'N4', 'N3'];
+    }
+
+    function isValidQuizLevel(level) {
+      return level in ['KANA', 'N5', 'N4', 'N3', 'MIXED'];
+    }
+
+    function isValidUserProfile(data, userId) {
+      return data.userId is string &&
+             data.userId == userId &&
+             data.userId == request.auth.uid &&
+             data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 80 &&
+             isValidLevel(data.targetLevel) &&
+             data.dailyGoal is int && data.dailyGoal >= 5 && data.dailyGoal <= 100 &&
+             data.xp is int && data.xp >= 0 && data.xp <= 10000000 &&
+             data.streakDays is int && data.streakDays >= 0 && data.streakDays <= 10000 &&
+             data.lastStudyDay is string && data.lastStudyDay.size() <= 20 &&
+             data.completedLessonIds is list && data.completedLessonIds.size() <= 100 &&
+             (data.completedLessonIds.size() == 0 || data.completedLessonIds[0] is string) &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidFlashcardProgress(data, userId, cardId) {
+      return data.userId is string &&
+             data.userId == userId &&
+             data.userId == request.auth.uid &&
+             data.itemId is string && data.itemId == cardId && data.itemId.size() >= 1 && data.itemId.size() <= 64 &&
+             data.japanese is string && data.japanese.size() >= 1 && data.japanese.size() <= 80 &&
+             data.reading is string && data.reading.size() >= 1 && data.reading.size() <= 120 &&
+             data.romaji is string && data.romaji.size() <= 120 &&
+             data.arabicMeaning is string && data.arabicMeaning.size() >= 1 && data.arabicMeaning.size() <= 200 &&
+             isValidLevel(data.level) &&
+             data.box is int && data.box >= 0 && data.box <= 10 &&
+             data.intervalDays is int && data.intervalDays >= 0 && data.intervalDays <= 3650 &&
+             data.easeFactor is number && data.easeFactor >= 1.3 && data.easeFactor <= 3.5 &&
+             data.nextReviewAtMs is int && data.nextReviewAtMs >= 0 &&
+             data.reviewCount is int && data.reviewCount >= 0 && data.reviewCount <= 100000 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidQuizResult(data, userId) {
+      return data.userId is string &&
+             data.userId == userId &&
+             data.userId == request.auth.uid &&
+             isValidQuizLevel(data.level) &&
+             data.totalQuestions is int && data.totalQuestions >= 1 && data.totalQuestions <= 100 &&
+             data.score is int && data.score >= 0 && data.score <= data.totalQuestions &&
+             data.xpEarned is int && data.xpEarned >= 0 && data.xpEarned <= 1000 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    match /users/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow list: if false;
+
+      allow create: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       incoming().keys().hasAll([
+                         'userId', 'displayName', 'targetLevel', 'dailyGoal',
+                         'xp', 'streakDays', 'lastStudyDay', 'completedLessonIds',
+                         'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'displayName', 'targetLevel', 'dailyGoal',
+                         'xp', 'streakDays', 'lastStudyDay', 'completedLessonIds',
+                         'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidUserProfile(incoming(), userId);
+
+      allow update: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       isValidUserProfile(incoming(), userId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'displayName', 'targetLevel', 'dailyGoal', 'xp',
+                         'streakDays', 'lastStudyDay', 'completedLessonIds', 'updatedAt'
+                       ]);
+
+      allow delete: if isOwner(userId) && isValidId(userId);
+
+      match /flashcards/{cardId} {
+        allow get: if isOwner(userId) && isValidId(cardId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(cardId) &&
+                         incoming().keys().hasAll([
+                           'userId', 'itemId', 'japanese', 'reading', 'romaji',
+                           'arabicMeaning', 'level', 'box', 'intervalDays',
+                           'easeFactor', 'nextReviewAtMs', 'reviewCount',
+                           'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'itemId', 'japanese', 'reading', 'romaji',
+                           'arabicMeaning', 'level', 'box', 'intervalDays',
+                           'easeFactor', 'nextReviewAtMs', 'reviewCount',
+                           'createdAt', 'updatedAt'
+                         ]) &&
+                         isValidFlashcardProgress(incoming(), userId, cardId);
+
+        allow update: if isOwner(userId) &&
+                         isValidId(cardId) &&
+                         isValidFlashcardProgress(incoming(), userId, cardId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().itemId == existing().itemId &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().diff(existing()).affectedKeys().hasOnly([
+                           'box', 'intervalDays', 'easeFactor',
+                           'nextReviewAtMs', 'reviewCount', 'updatedAt'
+                         ]);
+
+        allow delete: if isOwner(userId) && isValidId(cardId);
+      }
+
+      match /quiz_results/{resultId} {
+        allow get: if isOwner(userId) && isValidId(resultId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(resultId) &&
+                         incoming().keys().hasAll([
+                           'userId', 'level', 'score', 'totalQuestions',
+                           'xpEarned', 'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'level', 'score', 'totalQuestions',
+                           'xpEarned', 'createdAt', 'updatedAt'
+                         ]) &&
+                         isValidQuizResult(incoming(), userId);
+
+        allow update: if false;
+        allow delete: if isOwner(userId) && isValidId(resultId);
+      }
+    }
+  }
+}

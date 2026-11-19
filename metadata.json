@@ -1,0 +1,6 @@
+{
+  "name": "Kotoba",
+  "description": "تعلّم اللغة اليابانية بالعربية من الصفر حتى مستوى JLPT N3: الهيراغانا والكاتاكانا، الكانجي، القواعد، البطاقات الذكية، والاختبارات.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
